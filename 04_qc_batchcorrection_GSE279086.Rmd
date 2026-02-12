@@ -1,5 +1,5 @@
 ---
-title: "scRNAseq"
+title: "QC and Batch Correction"
 author: "Koushika R"
 date: "2026-02-11"
 output: html_document
@@ -7,18 +7,14 @@ output: html_document
 
 
 ```{r Define the directories}
-setwd("C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice")
-
-inputDir <- "C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/input/"
-
-outputDir <- "C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/output/"
-
-plotDir <- "C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/plots/"
+setwd("~/GSE279086_Practice")
+inputDir <- "~/GSE279086_Practice/input/"
+outputDir <- "~/GSE279086_Practice/output/"
+plotDir <- "~/GSE279086_Practice/plots/"
 ```
 
 
 ```{r Load the packages}
-#BiocManager::install("GEOquery")
 library(GEOquery)
 library(Seurat)
 library(SeuratDisk)
@@ -89,7 +85,6 @@ Assays(seurat_combined)           # (RNA) assays available in the rds
 DefaultAssay(seurat_combined)     # default/active (RNA) assay in the rds
 dim(seurat_combined)              # 28317 genes/features x 181842 cells
 ```
-
 
 
 # Adding 'Condition' col to the seurat object to do qc plot much better
@@ -210,7 +205,7 @@ density_scatter_plot <- function(seurat_obj, filename){
     geom_point(alpha = 0.3, size = 0.5) +
     theme_minimal() +
     theme(legend.position.inside = c(0.05, 0.95), legend.justification = c("left", "top"), legend.key.size = unit(0.5, 'cm')) +
-    guides(color = guide_legend(override.aes = list(size = 5))) + # 'size' here controls the symbol size
+    guides(color = guide_legend(override.aes = list(size = 5))) +  # 'size' here controls the symbol size
     labs(x = "log1p(nCount_RNA)", y = "log1p(nFeature_RNA)")
   
   p <- ggMarginal(p, type = "histogram", fill = "skyblue", bins = 40)
@@ -405,7 +400,7 @@ density_scatter_plot(seurat_filtered, file.path(plotDir, paste0(study_id, "_post
 
 
 ```{r Keep only protein coding genes}
-protein_coding_genes <- readLines("C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/Protein_coding_genes.txt")
+protein_coding_genes <- readLines("~/GSE279086_Practice/Protein_coding_genes.txt")
 
 # Subset BEFORE normalization
 seurat_filtered <- subset(seurat_filtered, features = protein_coding_genes)
@@ -418,60 +413,27 @@ dim(seurat_filtered)              # 16832 genes/features x 6327 cells
 ```
 
 
-
-```{r}
-#metadata <- read.csv("~/GSE183276/GSE183276_metadata.csv", header = TRUE, row.names = 1)
-#metadata
-# Add GEO metadata to seurat metadata slot}
-# Extract current Seurat metadata and keep barcodes
-#seurat_meta <- seurat_filtered@meta.data
-#seurat_meta$barcode <- rownames(seurat_meta)  # store barcodes as a column
-
-# Merge by sample <-> geo_accession
-#merged_meta <- merge(
-#  seurat_meta,
-#  metadata,
-#  by.x = "sample",
-#  by.y = "geo_accession",
-#  all.x = TRUE
-#)
-
-# Restore barcodes as rownames
-#rownames(merged_meta) <- merged_meta$barcode
-#merged_meta$barcode <- NULL 
-
-# Assign back to Seurat object
-#seurat_filtered@meta.data <- merged_meta
-```
-
-
 ```{r Save Filtered Seurat Object}
 saveRDS(seurat_filtered, file = paste0(outputDir,"02_GSE279086_seurat_qc_filtered.rds"))
 ```
-
 
 ```{r Load again the Filtered Seurat Object}
 seurat_filtered <- readRDS(file = paste0(outputDir, "02_GSE279086_seurat_qc_filtered.rds"))
 ```
 
-
 ```{r Standard workflow for normalization and scaling}
 cat("Normalizing data using LogNormalize method (scale factor = 10,000)...\n")
 seurat_processed <- NormalizeData(seurat_filtered,
-                                 normalization.method = "LogNormalize")  # What percentage of total RNA does each gene contribute in this cell?
+                                 normalization.method = "LogNormalize")
 
 seurat_processed <- FindVariableFeatures(seurat_processed, selection.method = "vst", nfeatures = 2500)
 seurat_processed <- ScaleData(seurat_processed) 
 seurat_processed <- RunPCA(seurat_processed, dims=1:100, npcs = 100)
 ```
 
-
-
 ```{r Custom colors for Condition in metadata}
 custom_colors <- c("AKI"="purple3", "DKD"="darkorange3", "HCKD"="green4", "Healthy"="blue3")
 ```
-
-
 
 ```{r Elbow Plot}
 # Get the standard deviation for each PC then get the variance explained by each PC, then calculate the cumulative variance
@@ -515,13 +477,9 @@ n_clusters <- length(unique(seurat_processed$pca_clusters))
 cat(glue("Clustering complete. Number of clusters: {n_clusters}\n"))  # 25 clusters found
 ```
 
-
-
 ```{r}
 head(seurat_processed@meta.data, 3)
 ```
-
-
 
 ```{r Save Unintegrated Seurat Object}
 saveRDS(seurat_processed, file = paste0(outputDir,"03_GSE279086_seurat_pca_umap.rds"))
@@ -548,7 +506,6 @@ SaveH5Seurat(
 
 writeH5AD(sce, file = paste0(outputDir, "03_GSE279086_seurat_pca_umap.h5ad"))
 ```
-
 
 
 ```{r Run Harmony & Perform Clustering on Harmony integrated data}
@@ -585,7 +542,6 @@ SaveH5Seurat(
 
 writeH5AD(sce_harmony, file = paste0(outputDir,  "04_GSE279086_harmony_corrected.h5ad"))
 ```
-
 
 
 ```{r Dimention reduction plot on PCA}
@@ -719,5 +675,6 @@ batch_cor_plot
 
 ggsave(filename = paste0(plotDir,"GSE279086_batch_correction_barplot_combined.png"), plot = batch_cor_plot, width = 23, height = 8, dpi = 300)
 ```
+
 
 
