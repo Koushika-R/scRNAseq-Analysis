@@ -13,7 +13,7 @@ library(tidyr)
 
 
 ```{r Prepare the seurat object}
-data_dir <- "C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/raw files"
+data_dir <- "~GSE279086_Practice/raw files"
 
 # List all GSM subdirectories
 samples <- list.dirs(data_dir, recursive = FALSE)
@@ -56,7 +56,7 @@ names(seurat_list)
 
 ```{r Save individual samples into a seurat object}
 #creating input files (.rds)
-output_dir <- file.path("C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/input")
+output_dir <- file.path("~GSE279086_Practice/input")
 
 if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
@@ -73,3 +73,4 @@ for (i in seq_along(seurat_list)) {
 
 message("All Seurat objects saved successfully in: ", output_dir)
 ```
+
