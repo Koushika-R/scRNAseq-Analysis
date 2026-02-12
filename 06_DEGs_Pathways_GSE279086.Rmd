@@ -1,0 +1,405 @@
+---
+title: "DEGs_Pathways_GSE279086"
+author: "Koushika R"
+date: "2026-02-11"
+output: html_document
+---
+
+```{r}
+library(zellkonverter)
+library(SingleCellExperiment)
+library(Seurat)
+library(MAST)
+
+sce <- readH5AD("C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/output/GSE279086_celltypist.h5ad")
+
+seurat_obj <- as.Seurat(
+  sce,
+  counts = "counts",
+  data = "logcounts"
+)
+
+saveRDS(seurat_obj, "C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/output/GSE279086_with_celltypist.rds")
+
+
+# after reading .h5ad and storing it in 'sce', u will see somthing like this:
+# Warning: The passed object is a 'AnnDataR6' object, conversion is likely to be less
+# reliableℹ Using stored X_name value 'counts'
+# <sys>:0: FutureWarning: Use varm (e.g. `k in adata.varm` or `adata.varm.keys() | {'u'}`) instead of AnnData.varm_keys, AnnData.varm_keys is deprecated and will be removed in the future.
+# <sys>:0: FutureWarning: Use obsm (e.g. `k in adata.obsm` or `adata.obsm.keys() | {'u'}`) instead of AnnData.obsm_keys, AnnData.obsm_keys is deprecated and will be removed in the future.
+# Warning: Unable to access items in obsm, attempting to convert the whole list. Access
+# error message: "'match' requires vector arguments"Warning: Unable to access items in obsp, attempting to convert the whole list. Access
+# error message: "'match' requires vector arguments" - DON'T WORRY ABOUT THIS - JUST PROCEED, IT'S JUST A WARNING!!
+```
+
+
+
+
+```{r}
+seurat_obj <- readRDS("C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/output/GSE279086_with_celltypist.rds")
+
+colnames(seurat_obj@meta.data)
+table(seurat_obj$Condition, seurat_obj$majority_voting)
+
+# Remove _control, _T1D from majority_voting
+seurat_obj$majority_voting <- gsub("_(Control|Type 1 Diabetes)$", "", seurat_obj$majority_voting)
+
+table(seurat_obj$Condition, seurat_obj$majority_voting) # check once.. in col, u must only have celltypes not _conditions.- if that is not the case, then run above 'substitution' function just one more time!!
+```
+
+
+```{r}
+DefaultAssay(seurat_obj) <- "originalexp"
+celltypes <- sort(unique(seurat_obj$majority_voting))
+celltypes
+
+celltypes <- gsub("-", "_", celltypes)
+celltypes
+```
+
+
+```{r}
+run_mast_per_celltype_T1D_vs_Control <- function(
+  seu,
+  celltype_col = "majority_voting",     # annotation column
+  condition_col = "Condition",   
+  outdir = "C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/output/DEG_MAST_T1D_vs_Control",
+  min_cells_per_group = 20
+) {
+
+  dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
+
+  meta <- seu@meta.data
+  celltypes <- sort(unique(meta[[celltype_col]]))
+
+  for (ct in celltypes) {
+
+    cat("\n▶ Processing cell type:", ct, "\n")
+
+    cells_ct <- rownames(meta)[meta[[celltype_col]] == ct]
+    cond_tab <- table(meta[cells_ct, condition_col])
+
+    # ---- check both groups exist
+    if (!all(c("Type 1 Diabetes", "Control") %in% names(cond_tab))) {
+      cat("Type 1 Diabetes Or Control missing → skipping \n")
+      next
+    }
+
+    # ---- minimum cells check
+    if (any(cond_tab[c("Type 1 Diabetes", "Control")] < min_cells_per_group)) {
+      cat("Not enough cells → skipping\n")
+      next
+    }
+
+    # ---- subset object
+    seu_ct <- subset(seu, cells = cells_ct)
+    DefaultAssay(seu_ct) <- "originalexp"
+    seu_ct <- NormalizeData(seu_ct, verbose = FALSE)
+
+    Idents(seu_ct) <- condition_col
+
+    # ---- run MAST
+    deg <- FindMarkers(
+      seu_ct,
+      ident.1 = "Type 1 Diabetes",
+      ident.2 = "Control",
+      test.use = "MAST",
+      logfc.threshold = 0,
+      min.pct = 0.1,
+      latent.vars = c("nCount_RNA", "percent.mt")
+    )
+
+    deg$gene <- rownames(deg)
+
+    # 🔥 CRITICAL FIX (THIS LINE SOLVES YOUR ERROR)
+    ct_clean <- gsub("[^a-zA-Z0-9]", "_", ct)
+
+    out_file <- file.path(
+      outdir,
+      paste0("DEG_", ct_clean, "_T1D_vs_Control.csv")
+    )
+
+    write.csv(deg, out_file, row.names = FALSE)
+
+    cat("  ✔ Saved:", out_file, "\n")
+  }
+}
+
+```
+
+
+
+```{r}
+run_mast_per_celltype_T1D_vs_Control(
+  seu = seurat_obj,
+  celltype_col = "majority_voting",   
+  condition_col = "Condition"
+)
+
+```
+
+
+
+```{r}
+library(clusterProfiler)
+library(ReactomePA)
+library(tidyverse)
+library(org.Hs.eg.db)
+library(dplyr)
+library(ggplot2)
+library(enrichplot)
+
+deg_path <- "C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/output/DEG_MAST_T1D_vs_Control"
+
+deg_files <- list.files(
+  deg_path,
+  pattern = "^DEG_.*\\.csv$",
+  full.names = TRUE
+)
+
+deg_files
+
+# --------------------------------------------------
+# Fix gene column name ONLY for DEG files
+# --------------------------------------------------
+for (file in deg_files) {
+  df <- read.csv(file, header = TRUE, stringsAsFactors = FALSE)
+  
+  if (colnames(df)[1] %in% c("", "X")) {
+    colnames(df)[1] <- "genes"
+  }
+  
+  write.csv(df, file, row.names = FALSE)
+}
+
+deg_summary <- data.frame(
+  CellType = character(),
+  Upregulated = integer(),
+  Downregulated = integer(),
+  Total_DEGs = integer(),
+  stringsAsFactors = FALSE
+)
+
+for (file in deg_files) {
+  deg_data <- read.csv(file)
+  
+  if (!all(c("avg_log2FC", "p_val_adj") %in% colnames(deg_data))) {
+    warning(paste("Skipping (missing columns):", basename(file)))
+    next
+  }
+  
+  up   <- sum(deg_data$avg_log2FC > 0 & deg_data$p_val_adj < 0.05)
+  down <- sum(deg_data$avg_log2FC < 0 & deg_data$p_val_adj < 0.05)
+  
+  celltype <- gsub("^DEG_(.*?)_T1D_vs_Control\\.csv$", "\\1", basename(file))
+  
+  deg_summary <- rbind(
+    deg_summary,
+    data.frame(
+      CellType = celltype,
+      Upregulated = up,
+      Downregulated = down,
+      Total_DEGs = up + down
+    )
+  )
+}
+
+deg_summary <- deg_summary %>% arrange(desc(Total_DEGs))
+
+print(deg_summary)
+
+write.csv(
+  deg_summary,
+  "C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/output/DEG_MAST_T1D_vs_Control/DEGsummary_table.csv",
+  row.names = FALSE
+)
+```
+
+
+
+
+
+# Pathways
+```{r}
+all_pathways_df <- data.frame()
+
+for (file_path in deg_files) {
+
+  file_name <- basename(file_path)
+  message("\n==============================")
+  message("▶ Processing file: ", file_name)
+
+  ## ---- Cell type extraction ----
+  celltype <- sub("^DEG_(.*?)_T1D_vs_Control\\.csv$", "\\1", file_name)
+
+  if (celltype == file_name) {
+    warning("⚠ Celltype extraction FAILED for file: ", file_name)
+    next
+  }
+
+  celltype_clean <- gsub("[^a-zA-Z0-9]", "_", celltype)
+  condition <- "T1D_vs_Control"
+
+  message("  ✔ Cell type identified: ", celltype)
+
+  ## ---- Read DEG file ----
+  res <- tryCatch(
+    read.csv(file_path, stringsAsFactors = FALSE),
+    error = function(e) {
+      message(" Failed to read file: ", e$message)
+      return(NULL)
+    }
+  )
+  if (is.null(res)) next
+
+  message("  ✔ DEG rows read: ", nrow(res))
+
+  ## ---- Required columns ----
+  if (!all(c("gene", "avg_log2FC") %in% colnames(res))) {
+    warning("  ⚠ Missing required columns in: ", file_name)
+    next
+  }
+
+  ## ---- SYMBOL → ENTREZ ----
+  ncbi_map <- suppressMessages(
+    clusterProfiler::bitr(
+      res$gene,
+      fromType = "SYMBOL",
+      toType = "ENTREZID",
+      OrgDb = org.Hs.eg.db
+    )
+  )
+
+  message("  ✔ Genes mapped to ENTREZ: ", nrow(ncbi_map))
+
+  res_mapped <- res %>%
+    left_join(ncbi_map, by = c("gene" = "SYMBOL")) %>%
+    filter(!is.na(ENTREZID)) %>%
+    distinct(ENTREZID, .keep_all = TRUE)
+
+  message(" Genes after filtering: ", nrow(res_mapped))
+
+  ## ---- Ranked gene list ----
+  gene_list <- res_mapped$avg_log2FC
+  names(gene_list) <- res_mapped$ENTREZID
+  gene_list <- sort(gene_list, decreasing = TRUE)
+
+  message("  ✔ Ranked gene list length: ", length(gene_list))
+
+  if (length(gene_list) < 20) {
+    message("  ⏭ Skipping GSEA: too few genes")
+    next
+  }
+
+  ## ---- Run GSEA ----
+  message(" Running Reactome GSEA...")
+
+  gsea_res <- tryCatch(
+    gsePathway(
+      geneList = gene_list,
+      organism = "human",
+      eps = 0,
+      verbose = FALSE
+    ),
+    error = function(e) {
+      message("  GSEA FAILED: ", e$message)
+      return(NULL)
+    }
+  )
+
+  if (is.null(gsea_res) || nrow(gsea_res@result) == 0) {
+    message("  ⏭ No significant pathways")
+    next
+  }
+
+  ## ---- Make readable ----
+  gsea_res <- setReadable(
+    gsea_res,
+    OrgDb = org.Hs.eg.db,
+    keyType = "ENTREZID"
+  )
+
+  pathways <- gsea_res@result %>%
+    filter(
+      !is.na(Description),
+      !is.na(NES),
+      !is.na(p.adjust),
+      !is.na(setSize)
+    )
+
+  message(" Valid pathways: ", nrow(pathways))
+
+  if (nrow(pathways) == 0) next
+
+  ## ---- Add metadata ----
+  pathways$CellType  <- celltype
+  pathways$Condition <- condition
+
+  all_pathways_df <- rbind(all_pathways_df, pathways)
+
+  ## ---- Save per-cell CSV ----
+  out_csv <- file.path(
+    deg_path,
+    paste0(celltype_clean, "_Reactome_GSEA_", condition, ".csv")
+  )
+  write.csv(pathways, out_csv, row.names = FALSE)
+
+  message("  ✔ GSEA CSV written for ", celltype)
+}
+```
+
+
+
+```{r}
+gsea_png_files <- c()
+
+for (ct in unique(all_pathways_df$CellType)) {
+
+  df_ct <- all_pathways_df %>%
+    filter(CellType == ct)
+
+  if (nrow(df_ct) == 0) {
+    message(" No pathways to plot")
+    next
+  }
+
+  ## ---- Select top pathways ----
+  top_pathways <- df_ct %>%
+    arrange(desc(abs(NES))) %>%
+    slice_head(n = 10)
+
+ if (nrow(top_pathways) == 0) next
+
+  ## ---- Order pathways by NES ----
+  top_pathways$Description <- factor(
+    top_pathways$Description,
+    levels = top_pathways$Description[order(top_pathways$NES)]
+  )
+
+  ## ---- Plot ----
+  p <- ggplot(
+    top_pathways,
+    aes(x = NES, y = Description, color = p.adjust, size = setSize)
+  ) +
+    geom_point() +
+    theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 7, face = "bold"),
+    axis.text.x = element_text(size = 7, face = "bold")
+  )
+  ## ---- Save PNG ----
+  ct_clean <- gsub("[^a-zA-Z0-9]", "_", ct)
+
+  png_file <- file.path(
+    deg_path,
+    paste0(ct_clean, ".png")
+  )
+
+  png(png_file, width = 9, height = 6, units = "in", res = 300)
+  print(p)
+  dev.off()
+
+  gsea_png_files <- c(gsea_png_files, png_file)
+}
+
+```
