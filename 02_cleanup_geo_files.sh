@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Base directory containing all GSM folders
-BASE_DIR="C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/raw files"
+BASE_DIR="~GSE279086_Practice/raw files"
 
 # Expand ~ manually
 BASE_DIR=$(eval echo "$BASE_DIR")
@@ -18,7 +18,7 @@ for GSM_DIR in GSM*; do
         cd "$GSM_DIR" || continue
 
         # Delete the processed files (where they are already filtered, cleaned etc)
-	# We require unprocessed (raw) files for our analysis
+	    # We require unprocessed (raw) files for our analysis
         rm -f *_barcodes_processed.tsv.gz *_features_processed.tsv.gz *_matrix_processed.mtx.gz
 
         # Rename the unprocessed files to simple names
