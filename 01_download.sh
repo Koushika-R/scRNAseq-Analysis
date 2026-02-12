@@ -60,7 +60,7 @@ FILES=(
 
 # === Download Process ===
 # Create main output directory
-BASE_DIR="C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/raw files"
+BASE_DIR="~GSE279086_Practice/raw files"
 mkdir -p "$BASE_DIR"
 cd "$BASE_DIR" || exit 1
 
