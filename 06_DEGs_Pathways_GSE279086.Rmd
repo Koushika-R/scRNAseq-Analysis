@@ -11,7 +11,7 @@ library(SingleCellExperiment)
 library(Seurat)
 library(MAST)
 
-sce <- readH5AD("C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/output/GSE279086_celltypist.h5ad")
+sce <- readH5AD("~GSE279086_Practice/output/GSE279086_celltypist.h5ad")
 
 seurat_obj <- as.Seurat(
   sce,
@@ -19,24 +19,12 @@ seurat_obj <- as.Seurat(
   data = "logcounts"
 )
 
-saveRDS(seurat_obj, "C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/output/GSE279086_with_celltypist.rds")
-
-
-# after reading .h5ad and storing it in 'sce', u will see somthing like this:
-# Warning: The passed object is a 'AnnDataR6' object, conversion is likely to be less
-# reliableℹ Using stored X_name value 'counts'
-# <sys>:0: FutureWarning: Use varm (e.g. `k in adata.varm` or `adata.varm.keys() | {'u'}`) instead of AnnData.varm_keys, AnnData.varm_keys is deprecated and will be removed in the future.
-# <sys>:0: FutureWarning: Use obsm (e.g. `k in adata.obsm` or `adata.obsm.keys() | {'u'}`) instead of AnnData.obsm_keys, AnnData.obsm_keys is deprecated and will be removed in the future.
-# Warning: Unable to access items in obsm, attempting to convert the whole list. Access
-# error message: "'match' requires vector arguments"Warning: Unable to access items in obsp, attempting to convert the whole list. Access
-# error message: "'match' requires vector arguments" - DON'T WORRY ABOUT THIS - JUST PROCEED, IT'S JUST A WARNING!!
+saveRDS(seurat_obj, "~GSE279086_Practice/output/GSE279086_with_celltypist.rds")
 ```
 
 
-
-
 ```{r}
-seurat_obj <- readRDS("C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/output/GSE279086_with_celltypist.rds")
+seurat_obj <- readRDS("~GSE279086_Practice/output/GSE279086_with_celltypist.rds")
 
 colnames(seurat_obj@meta.data)
 table(seurat_obj$Condition, seurat_obj$majority_voting)
@@ -44,7 +32,7 @@ table(seurat_obj$Condition, seurat_obj$majority_voting)
 # Remove _control, _T1D from majority_voting
 seurat_obj$majority_voting <- gsub("_(Control|Type 1 Diabetes)$", "", seurat_obj$majority_voting)
 
-table(seurat_obj$Condition, seurat_obj$majority_voting) # check once.. in col, u must only have celltypes not _conditions.- if that is not the case, then run above 'substitution' function just one more time!!
+table(seurat_obj$Condition, seurat_obj$majority_voting) 
 ```
 
 
@@ -63,7 +51,7 @@ run_mast_per_celltype_T1D_vs_Control <- function(
   seu,
   celltype_col = "majority_voting",     # annotation column
   condition_col = "Condition",   
-  outdir = "C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/output/DEG_MAST_T1D_vs_Control",
+  outdir = "~GSE279086_Practice/output/DEG_MAST_T1D_vs_Control",
   min_cells_per_group = 20
 ) {
 
@@ -149,7 +137,7 @@ library(dplyr)
 library(ggplot2)
 library(enrichplot)
 
-deg_path <- "C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/output/DEG_MAST_T1D_vs_Control"
+deg_path <- "~GSE279086_Practice/output/DEG_MAST_T1D_vs_Control"
 
 deg_files <- list.files(
   deg_path,
@@ -210,7 +198,7 @@ print(deg_summary)
 
 write.csv(
   deg_summary,
-  "C:/Users/koush/Desktop/Workshops/Single Cell RNASeq HandsOn Workshop/GSE279086_Practice/output/DEG_MAST_T1D_vs_Control/DEGsummary_table.csv",
+  "~GSE279086_Practice/output/DEG_MAST_T1D_vs_Control/DEGsummary_table.csv",
   row.names = FALSE
 )
 ```
