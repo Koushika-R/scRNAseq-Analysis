@@ -122,3 +122,20 @@ Gene Set Enrichment Analysis (GSEA) is applied using Reactome pathways. Genes ar
 
 # e) Visualization and export
 Top enriched pathways per cell type are visualized using dot plots, integrating normalized enrichment score (NES), statistical significance, and pathway size. All DEG tables, pathway results, plots, and the fully annotated Seurat object are saved, ensuring reproducibility and enabling downstream mechanistic or comparative analyses.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# RESULTS and INTREPRETATION
+# UMAP
+Refer: umap_celltypes_ct_Type 1 Diabetes and Control.pdf
+UMAP visualization of integrated single-cell RNA-seq data revealed clear segregation of major kidney cell types in both Control and Type 1 Diabetes (T1D) samples, including proximal tubules (PT), thick and thin ascending limbs (TAL/DTL), distal convoluted tubules (DCT), endothelial subtypes, podocytes, pericytes, and immune cells.
+
+The preservation of distinct and well-separated clusters across conditions indicates successful data integration and robust cell-type annotation. The overall cellular architecture is maintained in T1D kidneys, suggesting that early diabetic pathology does not involve widespread loss of kidney cell lineages. Instead, disease-associated effects are more likely driven by transcriptional and functional changes within existing cell types rather than the emergence or disappearance of specific populations.
+
+# Cell-type proportion changes between Control and T1D kidneys
+Refer: Cellproportions_barplot and Markergenes.pdf
+Comparative analysis of cell-type proportions revealed marked compositional remodeling in T1D kidneys. While endothelial peritubular capillary cells (EC-PTC) remained the most abundant endothelial population in both conditions. Notable shifts were observed across specific tubular compartments, including the proximal convoluted tubule (PC), descending thin limb (DTL), and medullary thick ascending limb (M-TAL), as well as stromal and vascular-associated populations such as vascular smooth muscle cells/pericytes and endothelial subtypes (EC-DVR, EC-AEA, EC-GC). In contrast, podocytes and NK cells were reduced in Type 1 Diabetes.
+
+The persistence of EC-PTC abundance in T1D is biologically significant, as these cells are critical for oxygen delivery and metabolic support of highly energy-demanding tubular segments. Their retention suggests that impaired kidney oxidative metabolism in T1D is not due to capillary loss but likely reflects altered metabolic function within resident cells. Concurrent expansion of tubular segments and stromal cells points toward adaptive or stress-associated remodeling, whereas the reduction in podocytes is consistent with early glomerular vulnerability in diabetic kidney disease.
+
+Marker gene expression confirmed robust cell-type annotation across Control and Type 1 Diabetes kidneys.
+
