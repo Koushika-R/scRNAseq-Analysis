@@ -124,6 +124,8 @@ Gene Set Enrichment Analysis (GSEA) is applied using Reactome pathways. Genes ar
 Top enriched pathways per cell type are visualized using dot plots, integrating normalized enrichment score (NES), statistical significance, and pathway size. All DEG tables, pathway results, plots, and the fully annotated Seurat object are saved, ensuring reproducibility and enabling downstream mechanistic or comparative analyses.
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 # RESULTS and INTREPRETATION
 # UMAP
 Refer: umap_celltypes_ct_Type 1 Diabetes and Control.pdf
@@ -138,4 +140,14 @@ Comparative analysis of cell-type proportions revealed marked compositional remo
 The persistence of EC-PTC abundance in T1D is biologically significant, as these cells are critical for oxygen delivery and metabolic support of highly energy-demanding tubular segments. Their retention suggests that impaired kidney oxidative metabolism in T1D is not due to capillary loss but likely reflects altered metabolic function within resident cells. Concurrent expansion of tubular segments and stromal cells points toward adaptive or stress-associated remodeling, whereas the reduction in podocytes is consistent with early glomerular vulnerability in diabetic kidney disease.
 
 Marker gene expression confirmed robust cell-type annotation across Control and Type 1 Diabetes kidneys.
+
+# Cell type specific DEG
+Refer: DEGsummary_table.csv
+Cell-type–specific differential expression analysis using MAST showed that gene expression changes in Type 1 Diabetes kidneys occur in selected cell populations rather than across all cell types. Principal cells displayed the largest number of differentially expressed genes, indicating strong transcriptional responses to diabetic conditions. Endothelial cell subtypes, particularly peritubular capillary and descending vasa recta endothelial cells, showed moderate but consistent changes, suggesting vascular adaptation in diabetes. In contrast, most tubular segments and podocytes showed little to no differential expression, indicating that their transcriptional programs remain largely stable at this stage of disease. Overall, these results highlight that molecular changes in T1D kidneys are cell-type–specific and justify cell-type–resolved analysis.
+
+# REACTOME GSEA
+Refer: REACTOME GSEA.pdf (PC, EC_PTC, EC_DVR, VSMC/P)
+Reactome GSEA identified significant pathway enrichment in a subset of cell types, including principal cells (PC), peritubular capillary endothelial cells (EC_PTC), descending vasa recta endothelial cells (EC_DVR), and vascular smooth muscle/pericytes (VSMC/P). These cell types exhibited sufficient and coordinated transcriptional changes to support pathway-level enrichment. In contrast, other tubular segments and podocytes showed minimal differential expression, resulting in insufficient signal for robust pathway enrichment. This indicates that early Type 1 Diabetes–associated molecular alterations are concentrated within specific epithelial and vascular compartments rather than uniformly affecting all kidney cell types.
+
+The Reactome GSEA results demonstrate that Type 1 Diabetes–associated molecular changes are spatially and functionally organized, beginning in metabolically active epithelial cells (PCs), extending to adjacent microvascular endothelial compartments (EC_PTC, EC_DVR), and finally involving vascular support cells (VSMC/P). Importantly, these changes reflect adaptive transcriptional remodeling linked to altered oxidative metabolism and vascular signaling, rather than widespread cell damage or loss. This reinforces the concept that early diabetic kidney disease is driven by cell-type–specific metabolic and microvascular stress.
 
